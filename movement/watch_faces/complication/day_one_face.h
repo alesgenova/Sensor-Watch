@@ -38,6 +38,11 @@ typedef enum {
     PAGE_DATE
 } day_one_page_t;
 
+typedef enum {
+    DISPLAY_DAYS,
+    DISPLAY_WEEKS
+} day_one_display_t;
+
 typedef struct {
     day_one_page_t current_page;
     uint16_t birth_year;
@@ -46,6 +51,7 @@ typedef struct {
     bool birthday_changed;
     bool quick_cycle;
     uint8_t ticks;
+    day_one_display_t display_mode;
 } day_one_state_t;
 
 void day_one_face_setup(movement_settings_t *settings, uint8_t watch_face_index, void ** context_ptr);

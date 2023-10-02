@@ -39,18 +39,27 @@ static void _day_one_face_update(day_one_state_t *state) {
     watch_date_time date_time = watch_rtc_get_date_time();
     uint32_t julian_date = _day_one_face_juliandaynum(date_time.unit.year + WATCH_RTC_REFERENCE_YEAR, date_time.unit.month, date_time.unit.day);
     uint32_t julian_birthdate = _day_one_face_juliandaynum(state->birth_year, state->birth_month, state->birth_day);
+    uint32_t elapsed_days;
+
     if (julian_date < julian_birthdate) {
-        sprintf(buf, "DA  %6lu", julian_birthdate - julian_date);
+        elapsed_days = julian_birthdate - julian_date;
     } else {
-        sprintf(buf, "DA  %6lu", julian_date - julian_birthdate);
+        elapsed_days = julian_date - julian_birthdate;
     }
+
+    if (state->display_mode == DISPLAY_DAYS) {
+        sprintf(buf, "DA  %6lu", elapsed_days);
+    } else {
+        sprintf(buf, "WE d%4lu-%1lu", elapsed_days / 7, elapsed_days % 7);
+    }
+
     watch_display_string(buf, 0);
 }
 
 static void _day_one_face_abort_quick_cycle(day_one_state_t *state) {
     if (state->quick_cycle) {
         state->quick_cycle = false;
-        movement_request_tick_frequency(4);
+        movement_request_tick_frequency(2);
     }
 }
 
@@ -80,6 +89,8 @@ void day_one_face_setup(movement_settings_t *settings, uint8_t watch_face_index,
     (void) watch_face_index;
     if (*context_ptr == NULL) {
         *context_ptr = malloc(sizeof(day_one_state_t));
+        day_one_state_t* state = (day_one_state_t*)*context_ptr;
+        state->display_mode = DISPLAY_DAYS;
         memset(*context_ptr, 0, sizeof(day_one_state_t));
         movement_birthdate_t movement_birthdate = (movement_birthdate_t) watch_get_backup_data(2);
         if (movement_birthdate.reg == 0) {
@@ -182,6 +193,14 @@ bool day_one_face_loop(movement_event_t event, movement_settings_t *settings, vo
                     break;
             }
             break;
+        case EVENT_LIGHT_LONG_PRESS:
+            if (state->display_mode == DISPLAY_DAYS) {
+                state->display_mode = DISPLAY_WEEKS;
+            } else {
+                state->display_mode = DISPLAY_DAYS;
+            }
+            _day_one_face_update(state);
+            break;
         case EVENT_LIGHT_BUTTON_UP:
             // otherwise use the light button to advance settings pages.
             switch (state->current_page) {
@@ -229,7 +248,7 @@ bool day_one_face_loop(movement_event_t event, movement_settings_t *settings, vo
             switch (state->current_page) {
                 case PAGE_DISPLAY:
                     state->current_page++;
-                    movement_request_tick_frequency(4);
+                    movement_request_tick_frequency(2);
                     break;
                 case PAGE_YEAR:
                     // fall through
